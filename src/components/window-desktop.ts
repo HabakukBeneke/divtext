@@ -1,5 +1,6 @@
 import { clamp } from "@/clamp";
 import { emit, on } from "@/events";
+import { readState } from "@/url-state";
 import type { BaseWindow } from "@/components/base-window";
 import type { TerminalWindow } from "@/components/terminal-window";
 import type { CodeWindow } from "@/components/code-window";
@@ -36,6 +37,7 @@ export class WindowDesktop extends HTMLElement {
   private spawn(): void {
     const win = document.createElement("terminal-window") as TerminalWindow;
     win.windowId = ++this.idSeq;
+    if (this.idSeq === 1) win.seed = readState();
 
     const width = Math.min(WINDOW_WIDTH, this.clientWidth - 32);
     const baseLeft = Math.max(20, (this.clientWidth - width) / 2);

@@ -1,14 +1,19 @@
-import { DEFAULT_COLOR, DEFAULT_FONT, FONTS, renderWord, type Font } from "@/fonts";
+import { DEFAULT_COLOR, DEFAULT_FONT, FONTS, getFont, renderWord, type Font } from "@/fonts";
 import { emit } from "@/events";
+import { writeState, type UrlState } from "@/url-state";
 import { BaseWindow } from "@/components/base-window";
 import { terminalBodyTemplate } from "@/components/terminal-window.template";
 
 export class TerminalWindow extends BaseWindow {
   windowTitle = "user@divtext: ~";
 
+  /** Optional seed from the URL, applied on first render. */
+  seed: UrlState | null = null;
+
   private input!: HTMLInputElement;
   private output!: HTMLElement;
   private tools!: HTMLElement;
+  private colorInput!: HTMLInputElement;
   private currentWord = "";
   private font: Font = DEFAULT_FONT;
   private color = DEFAULT_COLOR;
@@ -46,16 +51,32 @@ export class TerminalWindow extends BaseWindow {
       }
     });
 
-    const colorInput = host.querySelector('[data-role="color"]') as HTMLInputElement;
-    colorInput.addEventListener("input", () => this.setColor(colorInput.value));
+    this.colorInput = host.querySelector('[data-role="color"]') as HTMLInputElement;
+    this.colorInput.addEventListener("input", () => this.setColor(this.colorInput.value));
 
     this.buildFontPicker(host.querySelector('[data-role="fonts"]') as HTMLElement);
+
+    if (this.seed) this.applySeed(this.seed);
+  }
+
+  private applySeed(seed: UrlState): void {
+    this.font = getFont(seed.fontId);
+    this.color = seed.color;
+    this.colorInput.value = seed.color;
+    this.highlightFont();
+    this.render(seed.word);
+  }
+
+  private syncUrl(): void {
+    if (!this.currentWord) return;
+    writeState({ word: this.currentWord, fontId: this.font.id, color: this.color });
   }
 
   private setColor(color: string): void {
     this.color = color;
     if (this.currentWord) {
       this.output.replaceChildren(renderWord(this.currentWord, this.font, this.color));
+      this.syncUrl();
     }
   }
 
@@ -84,6 +105,7 @@ export class TerminalWindow extends BaseWindow {
     if (this.currentWord) {
       this.output.replaceChildren(renderWord(this.currentWord, this.font, this.color));
       this.animateCells();
+      this.syncUrl();
     }
   }
 
@@ -112,6 +134,7 @@ export class TerminalWindow extends BaseWindow {
     this.output.replaceChildren(renderWord(text, this.font, this.color));
     this.animateCells();
     this.tools.classList.remove("hidden");
+    this.syncUrl();
   }
 
   // Stagger a "draw" animation across every cell so the word builds up.
