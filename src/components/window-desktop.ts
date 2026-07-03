@@ -9,6 +9,11 @@ const WINDOW_WIDTH = 720;
 const CODE_WIDTH = 560;
 const CASCADE = 28;
 
+/**
+ * Root window manager. Assumes a single instance per document: taskbar
+ * events (spawn/restore/changed) travel over `document` to reach the taskbar,
+ * which lives in a sibling subtree, so a second desktop would share that bus.
+ */
 export class WindowDesktop extends HTMLElement {
   private idSeq = 0;
   private zSeq = 10;
@@ -16,14 +21,16 @@ export class WindowDesktop extends HTMLElement {
   private cleanups: Array<() => void> = [];
 
   connectedCallback(): void {
+    // Window-scoped events bubble up from child windows; taskbar events cross
+    // subtrees and so use `document`.
     this.cleanups.push(
       on(this, "wm:focus", (e) => this.raise(e.target as BaseWindow)),
       on(this, "wm:minimize", () => this.notifyChanged()),
       on(this, "wm:close", (e) => this.close(e.target as BaseWindow)),
-      on(document, "wm:spawn", () => this.spawn()),
-      on(document, "wm:code", (e) =>
+      on(this, "wm:code", (e) =>
         this.spawnCode(e.detail.word, e.detail.fontId, e.detail.color),
       ),
+      on(document, "wm:spawn", () => this.spawn()),
       on(document, "wm:restore", (e) => this.restore(e.detail.id)),
     );
     this.spawn();

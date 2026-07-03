@@ -43,7 +43,7 @@ export class TerminalWindow extends BaseWindow {
 
     this.onAction("view-code", () => {
       if (this.currentWord) {
-        emit(document, "wm:code", {
+        emit(this, "wm:code", {
           word: this.currentWord,
           fontId: this.font.id,
           color: this.color,
