@@ -1,5 +1,11 @@
+/** Escape a string for use in HTML text content. */
 function escapeHtml(text: string): string {
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/** Escape a string for use inside a double-quoted attribute value. */
+function escapeAttr(value: string): string {
+  return escapeHtml(value).replace(/"/g, "&quot;");
 }
 
 /** Serialize an element tree as indented HTML (2-space), Prettier-style. */
@@ -7,7 +13,7 @@ export function formatHtml(el: Element, indent = 0): string {
   const pad = "  ".repeat(indent);
   const tag = el.tagName.toLowerCase();
   const attrs = Array.from(el.attributes)
-    .map((a) => ` ${a.name}="${a.value}"`)
+    .map((a) => ` ${a.name}="${escapeAttr(a.value)}"`)
     .join("");
   const children = Array.from(el.children);
   if (children.length === 0) {
