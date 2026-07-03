@@ -39,18 +39,7 @@ export class WindowDesktop extends HTMLElement {
     win.windowId = ++this.idSeq;
     if (this.idSeq === 1) win.seed = readState();
 
-    const width = Math.min(WINDOW_WIDTH, this.clientWidth - 32);
-    const baseLeft = Math.max(20, (this.clientWidth - width) / 2);
-    const offset = (this.spawnCount % 8) * CASCADE;
-    this.spawnCount++;
-
-    this.appendChild(win);
-    win.place(
-      clamp(baseLeft + offset, 8, Math.max(8, this.clientWidth - width - 8)),
-      clamp(56 + offset, 8, Math.max(8, this.clientHeight - 120)),
-      width,
-    );
-    this.raise(win);
+    this.placeCascaded(win, WINDOW_WIDTH);
     win.focusPrompt();
   }
 
@@ -61,10 +50,17 @@ export class WindowDesktop extends HTMLElement {
     win.fontId = fontId;
     win.color = color;
 
-    const width = Math.min(CODE_WIDTH, this.clientWidth - 32);
+    this.placeCascaded(win, CODE_WIDTH);
+  }
+
+  /**
+   * Append a window and lay it out centred, nudged by a cascading offset so
+   * successive windows do not stack exactly on top of each other.
+   */
+  private placeCascaded(win: BaseWindow, preferredWidth: number): void {
+    const width = Math.min(preferredWidth, this.clientWidth - 32);
     const baseLeft = Math.max(20, (this.clientWidth - width) / 2);
-    const offset = (this.spawnCount % 8) * CASCADE;
-    this.spawnCount++;
+    const offset = (this.spawnCount++ % 8) * CASCADE;
 
     this.appendChild(win);
     win.place(
