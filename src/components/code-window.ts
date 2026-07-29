@@ -23,16 +23,16 @@ export class CodeWindow extends BaseWindow {
   protected renderBody(host: HTMLElement): void {
     this.setTitle(`code — ${this.word}`);
     host.innerHTML = `
-      <div class="px-5 py-4 flex flex-col gap-3">
+      <div class="px-5 py-4 flex flex-col gap-3 h-full min-h-0">
         <div data-role="mode" class="flex w-max rounded-md overflow-hidden border border-white/10 text-[13px]">
           <button data-mode="html" type="button" class="px-3 py-1 cursor-pointer">HTML Only</button>
           <button data-mode="css" type="button" class="px-3 py-1 cursor-pointer border-l border-white/10">HTML + CSS</button>
         </div>
-        <div data-role="style" class="hidden w-max rounded-md overflow-hidden border border-white/10 text-[13px]">
+        <div data-role="style" class="hidden flex w-max rounded-md overflow-hidden border border-white/10 text-[13px]">
           <button data-style="bem" type="button" class="px-3 py-1 cursor-pointer">BEM</button>
           <button data-style="minimal" type="button" class="px-3 py-1 cursor-pointer border-l border-white/10">Minimal</button>
         </div>
-        <div data-role="code-box" class="flex flex-col gap-3"></div>
+        <div data-role="code-box" class="flex flex-col gap-3 flex-1 min-h-0"></div>
       </div>
     `;
 
@@ -75,9 +75,12 @@ export class CodeWindow extends BaseWindow {
   // Build one titled code block (label + copy button + highlight slot).
   private buildCodeBlock(part: CodePart): { block: HTMLElement; slot: HTMLElement } {
     const block = document.createElement("div");
+    // Share the leftover body height between blocks; the slot does the scrolling.
+    block.className = "flex flex-col min-h-0 flex-1";
 
     const header = document.createElement("div");
-    header.className = "flex items-center justify-between px-1 pb-1 text-[11px] text-muted";
+    header.className =
+      "flex items-center justify-between px-1 pb-1 text-[11px] text-muted shrink-0";
     const label = document.createElement("span");
     label.textContent = part.title;
     const copy = document.createElement("button");
@@ -90,7 +93,7 @@ export class CodeWindow extends BaseWindow {
 
     const slot = document.createElement("div");
     slot.className =
-      "rounded-md border border-white/10 overflow-auto scroll-slim max-h-[240px] font-mono text-[12px] leading-[1.5] [&_pre]:m-0 [&_pre]:p-3";
+      "rounded-md border border-white/10 overflow-auto scroll-slim flex-1 min-h-[120px] font-mono text-[12px] leading-[1.5] [&_pre]:m-0 [&_pre]:p-3";
 
     block.append(header, slot);
     return { block, slot };

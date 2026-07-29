@@ -8,7 +8,27 @@ interface Geometry {
   left: number;
   top: number;
   width: number;
+  height: string;
 }
+
+const MIN_WIDTH = 280;
+const MIN_HEIGHT = 140;
+
+// Edges first, corners last: later siblings win the overlap at the corners.
+const HANDLES: Array<[dir: string, classes: string]> = [
+  ["n", "top-0 left-0 right-0 h-[6px] cursor-ns-resize"],
+  ["s", "bottom-0 left-0 right-0 h-[6px] cursor-ns-resize"],
+  ["w", "left-0 top-0 bottom-0 w-[6px] cursor-ew-resize"],
+  ["e", "right-0 top-0 bottom-0 w-[6px] cursor-ew-resize"],
+  ["nw", "top-0 left-0 w-3 h-3 cursor-nwse-resize"],
+  ["ne", "top-0 right-0 w-3 h-3 cursor-nesw-resize"],
+  ["sw", "bottom-0 left-0 w-3 h-3 cursor-nesw-resize"],
+  ["se", "bottom-0 right-0 w-3 h-3 cursor-nwse-resize"],
+];
+
+const RESIZE_HANDLES = HANDLES.map(
+  ([dir, classes]) => `<div data-resize="${dir}" class="absolute z-20 ${classes}"></div>`,
+).join("");
 
 // Shared window chrome: traffic-light bar, draggable title, min/max/close.
 const BAR = `
@@ -50,10 +70,13 @@ export abstract class BaseWindow extends HTMLElement {
     this.built = true;
 
     this.className =
-      "window absolute pointer-events-auto bg-term border border-white/[0.06] rounded-[10px] overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.5)]";
+      "window absolute flex flex-col pointer-events-auto bg-term border border-white/[0.06] rounded-[10px] overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.5)]";
     this.innerHTML = BAR;
     const body = document.createElement("div");
+    // Own the leftover height so a resized/maximised window scrolls its body.
+    body.className = "flex-1 min-h-0 overflow-auto";
     this.appendChild(body);
+    this.insertAdjacentHTML("beforeend", RESIZE_HANDLES);
 
     const bar = this.querySelector('[data-role="bar"]') as HTMLElement;
     this.titleEl = this.querySelector('[data-role="title"]') as HTMLElement;
@@ -61,6 +84,7 @@ export abstract class BaseWindow extends HTMLElement {
 
     this.addEventListener("pointerdown", () => emit(this, "wm:focus"), true);
     this.enableDrag(bar);
+    this.enableResize();
 
     this.onAction("close", () => emit(this, "wm:close"));
     this.onAction("minimize", () => {
@@ -89,10 +113,11 @@ export abstract class BaseWindow extends HTMLElement {
     this.titleEl.textContent = title;
   }
 
-  place(left: number, top: number, width: number): void {
+  place(left: number, top: number, width: number, height?: number): void {
     this.style.left = `${left}px`;
     this.style.top = `${top}px`;
     this.style.width = `${width}px`;
+    if (height !== undefined) this.style.height = `${height}px`;
   }
 
   raise(zIndex: number): void {
@@ -133,14 +158,15 @@ export abstract class BaseWindow extends HTMLElement {
         this.style.left = `${previous.left}px`;
         this.style.top = `${previous.top}px`;
         this.style.width = `${previous.width}px`;
+        this.style.height = previous.height;
       }
-      this.style.height = "";
       this.setMaximizeGlyph();
     } else {
       this.restore = {
         left: this.offsetLeft,
         top: this.offsetTop,
         width: this.offsetWidth,
+        height: this.style.height,
       };
       this.state = "maximized";
       this.applyMaximized();
@@ -162,6 +188,56 @@ export abstract class BaseWindow extends HTMLElement {
     const maximized = this.state === "maximized";
     if (glyph) glyph.innerHTML = maximized ? ICON_COLLAPSE : ICON_EXPAND;
     if (button) button.title = maximized ? "Restore" : "Maximize";
+  }
+
+  /** Drag any edge/corner handle to grow or shrink the window in place. */
+  private enableResize(): void {
+    for (const handle of this.querySelectorAll<HTMLElement>("[data-resize]")) {
+      handle.addEventListener("pointerdown", (e) => {
+        if (this.state === "maximized") return;
+        e.preventDefault();
+        e.stopPropagation();
+        emit(this, "wm:focus");
+
+        const dir = handle.dataset.resize as string;
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const origin = {
+          left: this.offsetLeft,
+          top: this.offsetTop,
+          width: this.offsetWidth,
+          height: this.offsetHeight,
+        };
+        const { clientWidth, clientHeight } = this.area;
+
+        const move = (ev: PointerEvent) => {
+          const dx = ev.clientX - startX;
+          const dy = ev.clientY - startY;
+          if (dir.includes("e")) {
+            this.style.width = `${clamp(origin.width + dx, MIN_WIDTH, Math.max(MIN_WIDTH, clientWidth - origin.left))}px`;
+          }
+          if (dir.includes("s")) {
+            this.style.height = `${clamp(origin.height + dy, MIN_HEIGHT, Math.max(MIN_HEIGHT, clientHeight - origin.top))}px`;
+          }
+          if (dir.includes("w")) {
+            const width = clamp(origin.width - dx, MIN_WIDTH, origin.left + origin.width);
+            this.style.width = `${width}px`;
+            this.style.left = `${origin.left + origin.width - width}px`;
+          }
+          if (dir.includes("n")) {
+            const height = clamp(origin.height - dy, MIN_HEIGHT, origin.top + origin.height);
+            this.style.height = `${height}px`;
+            this.style.top = `${origin.top + origin.height - height}px`;
+          }
+        };
+        const up = () => {
+          window.removeEventListener("pointermove", move);
+          window.removeEventListener("pointerup", up);
+        };
+        window.addEventListener("pointermove", move);
+        window.addEventListener("pointerup", up);
+      });
+    }
   }
 
   private enableDrag(bar: HTMLElement): void {

@@ -7,6 +7,8 @@ import type { CodeWindow } from "@/components/code-window";
 
 const WINDOW_WIDTH = 720;
 const CODE_WIDTH = 560;
+// Code windows open with a fixed height so their code blocks can flex to fill it.
+const CODE_HEIGHT = 420;
 const CASCADE = 28;
 
 /**
@@ -57,23 +59,29 @@ export class WindowDesktop extends HTMLElement {
     win.fontId = fontId;
     win.color = color;
 
-    this.placeCascaded(win, CODE_WIDTH);
+    this.placeCascaded(win, CODE_WIDTH, CODE_HEIGHT);
   }
 
   /**
    * Append a window and lay it out centred, nudged by a cascading offset so
    * successive windows do not stack exactly on top of each other.
    */
-  private placeCascaded(win: BaseWindow, preferredWidth: number): void {
+  private placeCascaded(win: BaseWindow, preferredWidth: number, preferredHeight?: number): void {
     const width = Math.min(preferredWidth, this.clientWidth - 32);
     const baseLeft = Math.max(20, (this.clientWidth - width) / 2);
     const offset = (this.spawnCount++ % 8) * CASCADE;
+    const top = clamp(56 + offset, 8, Math.max(8, this.clientHeight - 120));
+    const height =
+      preferredHeight === undefined
+        ? undefined
+        : Math.min(preferredHeight, Math.max(160, this.clientHeight - top - 16));
 
     this.appendChild(win);
     win.place(
       clamp(baseLeft + offset, 8, Math.max(8, this.clientWidth - width - 8)),
-      clamp(56 + offset, 8, Math.max(8, this.clientHeight - 120)),
+      top,
       width,
+      height,
     );
     this.raise(win);
   }
