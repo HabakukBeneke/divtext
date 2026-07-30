@@ -1,15 +1,17 @@
 import { formatHtml } from "@/fonts/format";
 import { pixelFont } from "@/fonts/pixel";
-import { DEFAULT_COLOR } from "@/fonts/types";
-import type { CodePart, CssStyle, ExportMode, Font } from "@/fonts/types";
+import { DEFAULT_COLOR, DEFAULT_DECOR } from "@/fonts/types";
+import type { CodePart, CssStyle, Decor, ExportMode, Font } from "@/fonts/types";
 
-export { DEFAULT_COLOR } from "@/fonts/types";
+export { DEFAULT_COLOR, DEFAULT_DECOR, LINE_STYLES } from "@/fonts/types";
 export type {
   CodePart,
   CodeLang,
   CssStyle,
+  Decor,
   ExportMode,
   Font,
+  LineStyle,
   RenderOptions,
 } from "@/fonts/types";
 
@@ -22,24 +24,32 @@ export function getFont(id: string): Font {
   return FONTS.find((font) => font.id === id) ?? DEFAULT_FONT;
 }
 
+/** Everything that shapes a word, beyond the word itself. */
+export interface WordStyle {
+  font: Font;
+  color: string;
+  decor: Decor;
+}
+
 /** Build the display DOM for a word (self-contained inline styles). */
-export function renderWord(
-  word: string,
-  font: Font = DEFAULT_FONT,
-  color: string = DEFAULT_COLOR,
-): HTMLElement {
-  return font.render(word, { mode: "html", style: "bem", color });
+export function renderWord(word: string, style: WordStyle): HTMLElement {
+  return style.font.render(word, {
+    mode: "html",
+    style: "bem",
+    color: style.color,
+    decor: style.decor,
+  });
 }
 
 /** Copy-paste-ready code for a word, split into blocks per the chosen mode. */
 export function exportParts(
   word: string,
+  wordStyle: WordStyle,
   mode: ExportMode,
-  font: Font = DEFAULT_FONT,
   style: CssStyle = "bem",
-  color: string = DEFAULT_COLOR,
 ): CodePart[] {
-  const opts = { mode, style, color };
+  const { font, color, decor } = wordStyle;
+  const opts = { mode, style, color, decor };
   const markup = formatHtml(font.render(word, opts));
   if (mode === "css" && font.stylesheet) {
     // CSS and HTML kept as separate blocks.

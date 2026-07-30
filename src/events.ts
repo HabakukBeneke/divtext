@@ -1,3 +1,5 @@
+import type { Decor } from "@/fonts";
+
 export interface MinimizedWindow {
   id: number;
   title: string;
@@ -8,7 +10,7 @@ export interface WindowEventMap {
   "wm:minimize": undefined;
   "wm:close": undefined;
   "wm:spawn": undefined;
-  "wm:code": { word: string; fontId: string; color: string };
+  "wm:code": { word: string; fontId: string; color: string; decor: Decor };
   "wm:restore": { id: number };
   "wm:changed": MinimizedWindow[];
 }

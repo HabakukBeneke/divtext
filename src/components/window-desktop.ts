@@ -1,5 +1,5 @@
 import { clamp } from "@/clamp";
-import { emit, on } from "@/events";
+import { emit, on, type WindowEventMap } from "@/events";
 import { readState } from "@/url-state";
 import type { BaseWindow } from "@/components/base-window";
 import type { TerminalWindow } from "@/components/terminal-window";
@@ -29,9 +29,7 @@ export class WindowDesktop extends HTMLElement {
       on(this, "wm:focus", (e) => this.raise(e.target as BaseWindow)),
       on(this, "wm:minimize", () => this.notifyChanged()),
       on(this, "wm:close", (e) => this.close(e.target as BaseWindow)),
-      on(this, "wm:code", (e) =>
-        this.spawnCode(e.detail.word, e.detail.fontId, e.detail.color),
-      ),
+      on(this, "wm:code", (e) => this.spawnCode(e.detail)),
       on(document, "wm:spawn", () => this.spawn()),
       on(document, "wm:restore", (e) => this.restore(e.detail.id)),
     );
@@ -52,12 +50,13 @@ export class WindowDesktop extends HTMLElement {
     win.focusPrompt();
   }
 
-  private spawnCode(word: string, fontId: string, color: string): void {
+  private spawnCode(source: WindowEventMap["wm:code"]): void {
     const win = document.createElement("code-window") as CodeWindow;
     win.windowId = ++this.idSeq;
-    win.word = word;
-    win.fontId = fontId;
-    win.color = color;
+    win.word = source.word;
+    win.fontId = source.fontId;
+    win.color = source.color;
+    win.decor = source.decor;
 
     this.placeCascaded(win, CODE_WIDTH, CODE_HEIGHT);
   }

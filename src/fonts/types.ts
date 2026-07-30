@@ -7,12 +7,35 @@ export type CodeLang = "html" | "css";
 
 export const DEFAULT_COLOR = "#10b981";
 
+/** Stroke style shared by every decoration line (and future borders). */
+export const LINE_STYLES = ["solid", "dashed", "dotted", "double"] as const;
+export type LineStyle = (typeof LINE_STYLES)[number];
+
+/**
+ * Optional extras drawn around a word. Grow this as new complements land
+ * (borders, border style, background…); every field needs a default here and
+ * a matching entry in the URL schema (src/url-state.ts).
+ */
+export interface Decor {
+  underline: boolean;
+  overline: boolean;
+  lineStyle: LineStyle;
+}
+
+export const DEFAULT_DECOR: Decor = {
+  underline: false,
+  overline: false,
+  lineStyle: "solid",
+};
+
 export interface RenderOptions {
   mode: ExportMode;
   /** CSS class convention (css mode only). */
   style: CssStyle;
   /** Fill color for the letters. */
   color: string;
+  /** Extras drawn around the word. */
+  decor: Decor;
 }
 
 export interface CodePart {

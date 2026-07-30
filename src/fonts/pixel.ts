@@ -6,6 +6,8 @@ const CELL = 8; // px per cell
 const GAP = 2; // px between cells
 const LETTER_GAP = 10; // px between letters
 const SPACE = 24; // px width of a blank space
+const LINE = 4; // px thickness of under/overline
+const LINE_GAP = 8; // px between the word and a decoration line
 
 const BLOCK = "divtext";
 // BEM class names.
@@ -21,15 +23,43 @@ const MIN_ON = "on";
 
 const EMPTY_ROWS = Array.from({ length: ROWS }, () => ".".repeat(COLS));
 
+// Container declarations, shared by both class conventions and inline mode.
+function wordDecls(opts: RenderOptions): Record<string, string> {
+  const { underline, overline, lineStyle } = opts.decor;
+  const decls: Record<string, string> = {
+    display: "flex",
+    "align-items": "flex-start",
+    gap: `${LETTER_GAP}px`,
+    "flex-wrap": "wrap",
+  };
+  if (underline || overline) {
+    // Shrink to the word so the lines stop at the last letter.
+    decls.width = "max-content";
+    decls["max-width"] = "100%";
+  }
+  const stroke = `${LINE}px ${lineStyle} ${opts.color}`;
+  if (overline) {
+    decls["border-top"] = stroke;
+    decls["padding-top"] = `${LINE_GAP}px`;
+  }
+  if (underline) {
+    decls["border-bottom"] = stroke;
+    decls["padding-bottom"] = `${LINE_GAP}px`;
+  }
+  return decls;
+}
+
+function inlineStyle(decls: Record<string, string>): string {
+  return Object.entries(decls)
+    .map(([prop, value]) => `${prop}:${value}`)
+    .join(";");
+}
+
 // BEM: one class per role. Five classes, no structural coupling.
-function bemStylesheet(color: string): string {
+function bemStylesheet(opts: RenderOptions): string {
+  const color = opts.color;
   return [
-    cssRule(`.${BEM.word}`, {
-      display: "flex",
-      "align-items": "flex-start",
-      gap: `${LETTER_GAP}px`,
-      "flex-wrap": "wrap",
-    }),
+    cssRule(`.${BEM.word}`, wordDecls(opts)),
     cssRule(`.${BEM.letter}`, {
       display: "grid",
       "grid-template-columns": `repeat(${COLS}, ${CELL}px)`,
@@ -44,14 +74,10 @@ function bemStylesheet(color: string): string {
 
 // Minimal: one container class + one modifier. Letters/cells matched by
 // structure; blank spaces are just empty letter grids (no extra class).
-function minimalStylesheet(color: string): string {
+function minimalStylesheet(opts: RenderOptions): string {
+  const color = opts.color;
   return [
-    cssRule(`.${BLOCK}`, {
-      display: "flex",
-      "align-items": "flex-start",
-      gap: `${LETTER_GAP}px`,
-      "flex-wrap": "wrap",
-    }),
+    cssRule(`.${BLOCK}`, wordDecls(opts)),
     cssRule(`.${BLOCK} > div`, {
       display: "grid",
       "grid-template-columns": `repeat(${COLS}, ${CELL}px)`,
@@ -67,9 +93,7 @@ function minimalStylesheet(color: string): string {
 }
 
 function stylesheet(opts: RenderOptions): string {
-  return opts.style === "minimal"
-    ? minimalStylesheet(opts.color)
-    : bemStylesheet(opts.color);
+  return opts.style === "minimal" ? minimalStylesheet(opts) : bemStylesheet(opts);
 }
 
 function makeCell(on: boolean, opts: RenderOptions): HTMLElement {
@@ -106,8 +130,7 @@ function makeGlyph(rows: string[], opts: RenderOptions): HTMLElement {
 function render(word: string, opts: RenderOptions): HTMLElement {
   const line = document.createElement("div");
   if (opts.mode !== "css") {
-    line.style.cssText =
-      `display:flex;align-items:flex-start;gap:${LETTER_GAP}px;flex-wrap:wrap`;
+    line.style.cssText = inlineStyle(wordDecls(opts));
   } else {
     line.className = BLOCK; // same container class for both conventions
   }

@@ -1,6 +1,18 @@
-import { DEFAULT_COLOR, DEFAULT_FONT, FONTS, getFont, renderWord, type Font } from "@/fonts";
+import {
+  DEFAULT_COLOR,
+  DEFAULT_DECOR,
+  DEFAULT_FONT,
+  FONTS,
+  LINE_STYLES,
+  getFont,
+  renderWord,
+  type Decor,
+  type Font,
+  type LineStyle,
+  type WordStyle,
+} from "@/fonts";
 import { emit } from "@/events";
-import { writeState, type UrlState } from "@/url-state";
+import { decorOf, writeState, type UrlState } from "@/url-state";
 import { BaseWindow } from "@/components/base-window";
 import { terminalBodyTemplate } from "@/components/terminal-window.template";
 
@@ -14,9 +26,11 @@ export class TerminalWindow extends BaseWindow {
   private output!: HTMLElement;
   private tools!: HTMLElement;
   private colorInput!: HTMLInputElement;
+  private lineStyleInput!: HTMLSelectElement;
   private currentWord = "";
   private font: Font = DEFAULT_FONT;
   private color = DEFAULT_COLOR;
+  private decor: Decor = { ...DEFAULT_DECOR };
 
   protected renderBody(host: HTMLElement): void {
     host.innerHTML = terminalBodyTemplate();
@@ -47,14 +61,19 @@ export class TerminalWindow extends BaseWindow {
           word: this.currentWord,
           fontId: this.font.id,
           color: this.color,
+          decor: { ...this.decor },
         });
       }
     });
 
     this.colorInput = host.querySelector('[data-role="color"]') as HTMLInputElement;
-    this.colorInput.addEventListener("input", () => this.setColor(this.colorInput.value));
+    this.colorInput.addEventListener("input", () => {
+      this.color = this.colorInput.value;
+      this.redraw();
+    });
 
     this.buildFontPicker(host.querySelector('[data-role="fonts"]') as HTMLElement);
+    this.buildDecorControls(host);
 
     if (this.seed) this.applySeed(this.seed);
   }
@@ -63,20 +82,67 @@ export class TerminalWindow extends BaseWindow {
     this.font = getFont(seed.fontId);
     this.color = seed.color;
     this.colorInput.value = seed.color;
+    this.decor = decorOf(seed);
+    this.lineStyleInput.value = this.decor.lineStyle;
     this.highlightFont();
+    this.highlightDecor();
     this.render(seed.word);
+  }
+
+  private get wordStyle(): WordStyle {
+    return { font: this.font, color: this.color, decor: this.decor };
   }
 
   private syncUrl(): void {
     if (!this.currentWord) return;
-    writeState({ word: this.currentWord, fontId: this.font.id, color: this.color });
+    writeState({
+      word: this.currentWord,
+      fontId: this.font.id,
+      color: this.color,
+      ...this.decor,
+    });
   }
 
-  private setColor(color: string): void {
-    this.color = color;
-    if (this.currentWord) {
-      this.output.replaceChildren(renderWord(this.currentWord, this.font, this.color));
-      this.syncUrl();
+  /** Repaint the current word after a style change (no-op before one exists). */
+  private redraw(animate = false): void {
+    if (!this.currentWord) return;
+    this.output.replaceChildren(renderWord(this.currentWord, this.wordStyle));
+    if (animate) this.animateCells();
+    this.syncUrl();
+  }
+
+  private buildDecorControls(host: HTMLElement): void {
+    for (const button of host.querySelectorAll<HTMLElement>("[data-decor]")) {
+      const flag = button.dataset.decor as "underline" | "overline";
+      button.addEventListener("click", () => {
+        this.decor = { ...this.decor, [flag]: !this.decor[flag] };
+        this.highlightDecor();
+        this.redraw();
+      });
+    }
+
+    this.lineStyleInput = host.querySelector('[data-role="line-style"]') as HTMLSelectElement;
+    for (const style of LINE_STYLES) {
+      const option = document.createElement("option");
+      option.value = style;
+      option.textContent = style;
+      this.lineStyleInput.appendChild(option);
+    }
+    this.lineStyleInput.value = this.decor.lineStyle;
+    this.lineStyleInput.addEventListener("change", () => {
+      this.decor = { ...this.decor, lineStyle: this.lineStyleInput.value as LineStyle };
+      this.redraw();
+    });
+
+    this.highlightDecor();
+  }
+
+  private highlightDecor(): void {
+    for (const button of this.querySelectorAll<HTMLElement>("[data-decor]")) {
+      const active = this.decor[button.dataset.decor as "underline" | "overline"];
+      button.classList.toggle("bg-primary", active);
+      button.classList.toggle("text-black", active);
+      button.classList.toggle("text-muted", !active);
     }
   }
 
@@ -102,11 +168,7 @@ export class TerminalWindow extends BaseWindow {
     if (this.font === font) return;
     this.font = font;
     this.highlightFont();
-    if (this.currentWord) {
-      this.output.replaceChildren(renderWord(this.currentWord, this.font, this.color));
-      this.animateCells();
-      this.syncUrl();
-    }
+    this.redraw(true);
   }
 
   private highlightFont(): void {
@@ -131,10 +193,8 @@ export class TerminalWindow extends BaseWindow {
     this.currentWord = text;
     this.setTitle(`user@divtext: ~/${text}`);
     this.collapseIntro();
-    this.output.replaceChildren(renderWord(text, this.font, this.color));
-    this.animateCells();
     this.tools.classList.remove("hidden");
-    this.syncUrl();
+    this.redraw(true);
   }
 
   // Stagger a "draw" animation across every cell so the word builds up.
