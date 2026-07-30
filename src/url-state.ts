@@ -3,7 +3,8 @@ import type { Decor, LineStyle } from "@/fonts";
 
 /**
  * Shareable snapshot of a rendered word, mirrored in the query string so a
- * URL round-trips the terminal state (?w=word&f=fontId&c=rrggbb&u=1&o=1&ls=dashed).
+ * URL round-trips the terminal state
+ * (?w=word&f=fontId&c=rrggbb&bt=1&br=1&bb=1&bl=1&ls=dashed).
  *
  * Every field is driven by one entry in SCHEMA below: to add a complement
  * (border, border style, background…) add the field here plus its spec there —
@@ -95,8 +96,10 @@ const SCHEMA: Schema = {
   word: text("w"),
   fontId: fontId("f"),
   color: color("c", DEFAULT_COLOR),
-  underline: flag("u", DEFAULT_DECOR.underline),
-  overline: flag("o", DEFAULT_DECOR.overline),
+  top: flag("bt", DEFAULT_DECOR.top),
+  right: flag("br", DEFAULT_DECOR.right),
+  bottom: flag("bb", DEFAULT_DECOR.bottom),
+  left: flag("bl", DEFAULT_DECOR.left),
   lineStyle: choice<LineStyle>("ls", LINE_STYLES, DEFAULT_DECOR.lineStyle),
 };
 
@@ -135,8 +138,10 @@ export function writeState(state: UrlState): void {
 /** The decoration slice of a state, ready to hand to a renderer. */
 export function decorOf(state: UrlState): Decor {
   return {
-    underline: state.underline,
-    overline: state.overline,
+    top: state.top,
+    right: state.right,
+    bottom: state.bottom,
+    left: state.left,
     lineStyle: state.lineStyle,
   };
 }

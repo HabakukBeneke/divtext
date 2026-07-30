@@ -11,20 +11,25 @@ export const DEFAULT_COLOR = "#10b981";
 export const LINE_STYLES = ["solid", "dashed", "dotted", "double"] as const;
 export type LineStyle = (typeof LINE_STYLES)[number];
 
+/** Border sides, in CSS order. Top alone is an overline, bottom an underline. */
+export const SIDES = ["top", "right", "bottom", "left"] as const;
+export type Side = (typeof SIDES)[number];
+
 /**
- * Optional extras drawn around a word. Grow this as new complements land
- * (borders, border style, background…); every field needs a default here and
- * a matching entry in the URL schema (src/url-state.ts).
+ * Optional extras drawn around a word: any combination of the four sides,
+ * from a single underline to a full box. Grow this as new complements land
+ * (radius, background…); every field needs a default here and a matching
+ * entry in the URL schema (src/url-state.ts).
  */
-export interface Decor {
-  underline: boolean;
-  overline: boolean;
+export type Decor = Record<Side, boolean> & {
   lineStyle: LineStyle;
-}
+};
 
 export const DEFAULT_DECOR: Decor = {
-  underline: false,
-  overline: false,
+  top: false,
+  right: false,
+  bottom: false,
+  left: false,
   lineStyle: "solid",
 };
 

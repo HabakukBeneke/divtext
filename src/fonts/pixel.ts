@@ -1,5 +1,6 @@
 import { cssRule } from "@/fonts/format";
 import { GLYPHS, GLYPH_COLS as COLS, GLYPH_ROWS as ROWS } from "@/fonts/glyphs";
+import { SIDES } from "@/fonts/types";
 import type { Font, RenderOptions } from "@/fonts/types";
 
 const CELL = 8; // px per cell
@@ -25,26 +26,23 @@ const EMPTY_ROWS = Array.from({ length: ROWS }, () => ".".repeat(COLS));
 
 // Container declarations, shared by both class conventions and inline mode.
 function wordDecls(opts: RenderOptions): Record<string, string> {
-  const { underline, overline, lineStyle } = opts.decor;
+  const decor = opts.decor;
   const decls: Record<string, string> = {
     display: "flex",
     "align-items": "flex-start",
     gap: `${LETTER_GAP}px`,
     "flex-wrap": "wrap",
   };
-  if (underline || overline) {
-    // Shrink to the word so the lines stop at the last letter.
-    decls.width = "max-content";
-    decls["max-width"] = "100%";
-  }
-  const stroke = `${LINE}px ${lineStyle} ${opts.color}`;
-  if (overline) {
-    decls["border-top"] = stroke;
-    decls["padding-top"] = `${LINE_GAP}px`;
-  }
-  if (underline) {
-    decls["border-bottom"] = stroke;
-    decls["padding-bottom"] = `${LINE_GAP}px`;
+  const sides = SIDES.filter((side) => decor[side]);
+  if (sides.length === 0) return decls;
+
+  // Shrink to the word so the lines stop at the last letter.
+  decls.width = "max-content";
+  decls["max-width"] = "100%";
+  const stroke = `${LINE}px ${decor.lineStyle} ${opts.color}`;
+  for (const side of sides) {
+    decls[`border-${side}`] = stroke;
+    decls[`padding-${side}`] = `${LINE_GAP}px`;
   }
   return decls;
 }

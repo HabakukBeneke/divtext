@@ -3,7 +3,7 @@ import { pixelFont } from "@/fonts/pixel";
 import { DEFAULT_COLOR, DEFAULT_DECOR } from "@/fonts/types";
 import type { CodePart, CssStyle, Decor, ExportMode, Font } from "@/fonts/types";
 
-export { DEFAULT_COLOR, DEFAULT_DECOR, LINE_STYLES } from "@/fonts/types";
+export { DEFAULT_COLOR, DEFAULT_DECOR, LINE_STYLES, SIDES } from "@/fonts/types";
 export type {
   CodePart,
   CodeLang,
@@ -13,6 +13,7 @@ export type {
   Font,
   LineStyle,
   RenderOptions,
+  Side,
 } from "@/fonts/types";
 
 // Registry of available letter styles. Add new fonts here.

@@ -4,11 +4,13 @@ import {
   DEFAULT_FONT,
   FONTS,
   LINE_STYLES,
+  SIDES,
   getFont,
   renderWord,
   type Decor,
   type Font,
   type LineStyle,
+  type Side,
   type WordStyle,
 } from "@/fonts";
 import { emit } from "@/events";
@@ -41,7 +43,9 @@ export class TerminalWindow extends BaseWindow {
 
     this.addEventListener("click", (e) => {
       const target = e.target as HTMLElement;
-      if (target.closest("button, a")) return;
+      // Never steal focus from another control: a select would close its
+      // dropdown the moment the prompt took focus.
+      if (target.closest("button, a, label, input, select, textarea")) return;
       if (window.getSelection()?.toString()) return;
       this.input.focus();
     });
@@ -112,13 +116,22 @@ export class TerminalWindow extends BaseWindow {
   }
 
   private buildDecorControls(host: HTMLElement): void {
-    for (const button of host.querySelectorAll<HTMLElement>("[data-decor]")) {
-      const flag = button.dataset.decor as "underline" | "overline";
+    // One border toggle per side: any combination, up to a full box.
+    const sideRow = host.querySelector('[data-role="decor"]') as HTMLElement;
+    for (const side of SIDES) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.decor = side;
+      button.title = `Border ${side}`;
+      button.textContent = side[0].toUpperCase() + side.slice(1);
+      button.className =
+        "px-3 py-1 cursor-pointer border-white/10 [&:not(:first-child)]:border-l";
       button.addEventListener("click", () => {
-        this.decor = { ...this.decor, [flag]: !this.decor[flag] };
+        this.decor = { ...this.decor, [side]: !this.decor[side] };
         this.highlightDecor();
         this.redraw();
       });
+      sideRow.appendChild(button);
     }
 
     this.lineStyleInput = host.querySelector('[data-role="line-style"]') as HTMLSelectElement;
@@ -139,7 +152,7 @@ export class TerminalWindow extends BaseWindow {
 
   private highlightDecor(): void {
     for (const button of this.querySelectorAll<HTMLElement>("[data-decor]")) {
-      const active = this.decor[button.dataset.decor as "underline" | "overline"];
+      const active = this.decor[button.dataset.decor as Side];
       button.classList.toggle("bg-primary", active);
       button.classList.toggle("text-black", active);
       button.classList.toggle("text-muted", !active);
