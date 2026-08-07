@@ -29,6 +29,8 @@ export class TerminalWindow extends BaseWindow {
   private tools!: HTMLElement;
   private colorInput!: HTMLInputElement;
   private lineStyleInput!: HTMLSelectElement;
+  /** Absent while a single font is registered (the picker stays hidden). */
+  private fontInput?: HTMLSelectElement;
   private currentWord = "";
   private font: Font = DEFAULT_FONT;
   private color = DEFAULT_COLOR;
@@ -88,7 +90,7 @@ export class TerminalWindow extends BaseWindow {
     this.colorInput.value = seed.color;
     this.decor = decorOf(seed);
     this.lineStyleInput.value = this.decor.lineStyle;
-    this.highlightFont();
+    if (this.fontInput) this.fontInput.value = this.font.id;
     this.highlightDecor();
     this.render(seed.word);
   }
@@ -159,38 +161,28 @@ export class TerminalWindow extends BaseWindow {
     }
   }
 
+  // A dropdown, not a button row: the registry is meant to keep growing.
   private buildFontPicker(host: HTMLElement): void {
     if (FONTS.length < 2) {
       host.classList.add("hidden"); // no point showing a one-option picker
       return;
     }
+    const select = host.querySelector('[data-role="font"]') as HTMLSelectElement;
     for (const font of FONTS) {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.dataset.font = font.id;
-      button.textContent = font.label;
-      button.className =
-        "px-3 py-1 cursor-pointer border-white/10 [&:not(:first-child)]:border-l";
-      button.addEventListener("click", () => this.setFont(font));
-      host.appendChild(button);
+      const option = document.createElement("option");
+      option.value = font.id;
+      option.textContent = font.label;
+      select.appendChild(option);
     }
-    this.highlightFont();
+    select.value = this.font.id;
+    select.addEventListener("change", () => this.setFont(getFont(select.value)));
+    this.fontInput = select;
   }
 
   private setFont(font: Font): void {
     if (this.font === font) return;
     this.font = font;
-    this.highlightFont();
     this.redraw(true);
-  }
-
-  private highlightFont(): void {
-    for (const button of this.querySelectorAll<HTMLElement>("[data-font]")) {
-      const active = button.dataset.font === this.font.id;
-      button.classList.toggle("bg-primary", active);
-      button.classList.toggle("text-black", active);
-      button.classList.toggle("text-muted", !active);
-    }
   }
 
   override focusPrompt(): void {

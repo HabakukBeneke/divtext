@@ -1,12 +1,10 @@
 import { cssRule } from "@/fonts/format";
 import { GLYPHS, GLYPH_COLS as COLS, GLYPH_ROWS as ROWS } from "@/fonts/glyphs";
-import { SIDES } from "@/fonts/types";
+import { inlineStyle, wordDecls as boxDecls } from "@/fonts/word-box";
 import type { Font, RenderOptions } from "@/fonts/types";
 
 const CELL = 8; // px per cell
 const SPACE = 24; // px width of a blank space
-const LINE = 4; // px thickness of under/overline
-const LINE_GAP = 8; // px between the word and a decoration line
 
 /** What separates one grid font from another: spacing and cell shape. */
 export interface GridFontSpec {
@@ -60,33 +58,8 @@ export function createGridFont(spec: GridFontSpec): Font {
     `background:${color}` + (radius > 0 ? `;border-radius:${radius}px` : "");
 
   // Container declarations, shared by both class conventions and inline mode.
-  function wordDecls(opts: RenderOptions): Record<string, string> {
-    const decor = opts.decor;
-    const decls: Record<string, string> = {
-      display: "flex",
-      "align-items": "flex-start",
-      gap: `${letterGap}px`,
-      "flex-wrap": "wrap",
-    };
-    const sides = SIDES.filter((side) => decor[side]);
-    if (sides.length === 0) return decls;
-
-    // Shrink to the word so the lines stop at the last letter.
-    decls.width = "max-content";
-    decls["max-width"] = "100%";
-    const stroke = `${LINE}px ${decor.lineStyle} ${opts.color}`;
-    for (const side of sides) {
-      decls[`border-${side}`] = stroke;
-      decls[`padding-${side}`] = `${LINE_GAP}px`;
-    }
-    return decls;
-  }
-
-  function inlineStyle(decls: Record<string, string>): string {
-    return Object.entries(decls)
-      .map(([prop, value]) => `${prop}:${value}`)
-      .join(";");
-  }
+  const wordDecls = (opts: RenderOptions): Record<string, string> =>
+    boxDecls(opts, letterGap);
 
   // BEM: one class per role. Five classes, no structural coupling.
   function bemStylesheet(opts: RenderOptions): string {

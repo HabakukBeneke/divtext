@@ -22,14 +22,16 @@
 }
 
 /* Each cell pops in; a per-cell animation-delay drives the "cell by cell" draw. */
+/* Animates the standalone `scale` property, not `transform`: geometric
+   glyphs keep their rotation in `transform` and must not lose it here. */
 @keyframes divtext-draw {
     from {
         opacity: 0;
-        transform: scale(0.3);
+        scale: 0.3;
     }
     to {
         opacity: 1;
-        transform: none;
+        scale: 1;
     }
 }
 

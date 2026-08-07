@@ -20,7 +20,13 @@ export function terminalBodyTemplate(): string {
       <div data-role="output" class="mt-[18px] min-h-[80px]"></div>
 
       <div data-role="tools" class="mt-4 hidden flex flex-wrap items-center gap-2">
-        <div data-role="fonts" class="flex rounded-md overflow-hidden border border-white/10 text-[13px]"></div>
+        <!-- Not a <label>: it would forward the click and close the dropdown. -->
+        <div data-role="fonts"
+          class="flex items-center gap-1.5 px-2 py-1 rounded-md text-[13px] text-muted border border-white/10">
+          <span>Font</span>
+          <select data-role="font" aria-label="Font"
+            class="bg-bar text-fg border-none outline-none text-[13px] cursor-pointer"></select>
+        </div>
         <div data-role="decor" class="flex rounded-md overflow-hidden border border-white/10 text-[13px]"></div>
         <!-- Not a <label>: it would forward the click and close the dropdown. -->
         <div class="flex items-center gap-1.5 px-2 py-1 rounded-md text-[13px] text-muted border border-white/10">

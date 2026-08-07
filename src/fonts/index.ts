@@ -1,6 +1,7 @@
 import { formatHtml } from "@/fonts/format";
+import { geoFont } from "@/fonts/geo";
+import { pixelBlockFont } from "@/fonts/pixel-block";
 import { pixelFont } from "@/fonts/pixel";
-import { solidFont } from "@/fonts/solid";
 import { DEFAULT_COLOR, DEFAULT_DECOR } from "@/fonts/types";
 import type { CodePart, CssStyle, Decor, ExportMode, Font } from "@/fonts/types";
 
@@ -18,7 +19,7 @@ export type {
 } from "@/fonts/types";
 
 // Registry of available letter styles. Add new fonts here.
-export const FONTS: Font[] = [pixelFont, solidFont];
+export const FONTS: Font[] = [pixelFont, pixelBlockFont, geoFont];
 
 export const DEFAULT_FONT = pixelFont;
 
